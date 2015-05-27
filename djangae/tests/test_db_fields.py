@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 
 # DJANGAE
+from django.core.exceptions import ValidationError
 from djangae.db import transaction
 from djangae.fields import (
     ComputedCharField,
@@ -252,8 +253,11 @@ class IterableFieldTests(TestCase):
 
         instance.list_field = None
 
+        instance.list_field = "['One', 'Two']"
+        self.assertEqual(["One", "Two"], instance.list_field)
+
         # Or anything else for that matter!
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             instance.list_field = "Bananas"
             instance.save()
 
@@ -274,8 +278,11 @@ class IterableFieldTests(TestCase):
 
         instance.set_field = None
 
+        instance.set_field = "['One', 'Two']"
+        self.assertEqual(set(["One", "Two"]), instance.set_field)
+
         # Or anything else for that matter!
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             instance.set_field = "Bananas"
             instance.save()
 

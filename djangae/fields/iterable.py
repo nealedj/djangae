@@ -117,6 +117,19 @@ class IterableField(models.Field):
         if value is None:
             return self._iterable_type([])
 
+        # Deal with deserialization from a string
+        if isinstance(value, basestring):
+            if not (value.startswith("[") and value.endswith("]")):
+                raise ValidationError(
+                    "Invalid input for {0} instance".format(type(self).__name__))
+
+            value = value[1:-1].strip()
+
+            if not value:
+                return self._iterable_type([])
+
+            value = [v.strip('\'" ') for v in value.split(',')]
+
         # Because a set cannot be defined in JSON, we must allow a list to be passed as the value
         # of a SetField, as otherwise SetField data can't be loaded from fixtures
         if not hasattr(value, "__iter__"): # Allows list/set, not string
