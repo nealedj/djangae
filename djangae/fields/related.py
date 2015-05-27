@@ -225,7 +225,7 @@ class RelatedSetField(RelatedField):
             if not value:
                 return set()
 
-            ids = [ self.rel.to._meta.pk.to_python(x) for x in value.split(",") ]
+            ids = [ self.rel.to._meta.pk.to_python(x.rstrip('L')) for x in value.split(",") ]
 
             # Annoyingly Django special cases FK and M2M in the Python deserialization code,
             # to assign to the attname, whereas all other fields (including this one) are required to

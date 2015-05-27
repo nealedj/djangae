@@ -308,6 +308,7 @@ class InstanceSetFieldTests(TestCase):
         i2 = ISOther.objects.create(pk=2)
 
         self.assertEqual(set([i1, i2]), ISModel._meta.get_field("related_things").to_python("[1, 2]"))
+        self.assertEqual(set([i1, i2]), ISModel._meta.get_field("related_things").to_python("[1, 2L]"))
 
     def test_basic_usage(self):
         main = ISModel.objects.create()
