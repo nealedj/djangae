@@ -317,6 +317,18 @@ class IterableFieldTests(TestCase):
 
 class InstanceListFieldTests(TestCase):
 
+    def test_serialization(self):
+        i1 = ISOther.objects.create(pk=1)
+        i2 = ISOther.objects.create(pk=2)
+        instance = ISModel.objects.create(related_things=[i1,i2], related_list=[i1,i2])
+
+        self.assertEqual(
+            "{1,2}",
+            instance._meta.get_field_by_name("related_things")[0].value_to_string(instance))
+        self.assertEqual(
+            "[1,2]",
+            instance._meta.get_field_by_name("related_list")[0].value_to_string(instance))
+
     def test_deserialization(self):
         i1 = ISOther.objects.create(pk=1)
         i2 = ISOther.objects.create(pk=2)

@@ -9,6 +9,8 @@ from djangae.forms.fields import (
     GenericRelationFormfield
 )
 from django.utils import six
+from django.utils.encoding import is_protected_type
+
 
 class RelatedIteratorRel(ForeignObjectRel):
     def __init__(self, to, related_name=None, limit_choices_to=None):
@@ -311,13 +313,6 @@ class RelatedIteratorField(RelatedField):
             ret = list(ret)
         return ret
 
-    def value_to_string(self, obj):
-        """
-        Custom method for serialization, as JSON doesn't support
-        serializing sets.
-        """
-        return str(list(self._get_val_from_obj(obj)))
-
     def save_form_data(self, instance, data):
         getattr(instance, self.attname).clear() #Wipe out existing things
 
@@ -342,6 +337,15 @@ class RelatedIteratorField(RelatedField):
                 initial = initial()
             defaults['initial'] = [i._get_pk_val() for i in initial]
         return super(RelatedIteratorField, self).formfield(**defaults)
+
+    def value_to_string(self, obj):
+        """
+        Custom method for serialization
+        """
+        return "[" + ",".join(
+            str(o) if is_protected_type(o) else "'{0}'".format(o.encode('utf-8'))
+            for o in self._get_val_from_obj(obj)
+        ) + "]"
 
 
 class RelatedSetField(RelatedIteratorField):
@@ -379,6 +383,15 @@ class RelatedSetField(RelatedIteratorField):
 
         return set(value)
 
+    def value_to_string(self, obj):
+        """
+        Custom method for serialization, as JSON doesn't support
+        serializing sets.
+        """
+        return "{" + ",".join(
+            str(o) if is_protected_type(o) else "'{0}'".format(o.encode('utf-8'))
+            for o in self._get_val_from_obj(obj)
+        ) + "}"
 
 class RelatedListField(RelatedIteratorField):
 
