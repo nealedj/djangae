@@ -93,6 +93,8 @@ class ISModel(models.Model):
 class IterableFieldModel(models.Model):
     set_field = SetField(models.CharField(max_length=1))
     list_field = ListField(models.CharField(max_length=1))
+    set_field_int = SetField(models.BigIntegerField(max_length=1))
+    list_field_int = ListField(models.BigIntegerField(max_length=1))
 
     class Meta:
         app_label = "djangae"
@@ -300,10 +302,17 @@ class IterableFieldTests(TestCase):
         self.assertTrue(IterableFieldModel.objects.exclude(set_field__isnull=True).exists())
 
     def test_serialization(self):
-        instance = IterableFieldModel.objects.create(set_field={"foo"}, list_field=["bar"])
+        instance = IterableFieldModel.objects.create(
+            set_field={"foo"},
+            list_field=["bar"],
+            set_field_int={123L},
+            list_field_int=[456L]
+        )
 
         self.assertEqual("{'foo'}", instance._meta.get_field_by_name("set_field")[0].value_to_string(instance))
         self.assertEqual("['bar']", instance._meta.get_field_by_name("list_field")[0].value_to_string(instance))
+        self.assertEqual("{123}", instance._meta.get_field_by_name("set_field_int")[0].value_to_string(instance))
+        self.assertEqual("[456]", instance._meta.get_field_by_name("list_field_int")[0].value_to_string(instance))
 
 
 class InstanceListFieldTests(TestCase):

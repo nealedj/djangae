@@ -220,9 +220,10 @@ class IterableField(models.Field):
         """
         Custom method for serialization
         """
-        return str([
-            o if is_protected_type(o) else o.encode('utf-8')
-            for o in self._get_val_from_obj(obj)])
+        return "[" + ",".join(
+            str(o) if is_protected_type(o) else "'{0}'".format(o.encode('utf-8'))
+            for o in self._get_val_from_obj(obj)
+        ) + "]"
 
 
 class ListField(IterableField):
@@ -276,6 +277,6 @@ class SetField(IterableField):
         serializing sets.
         """
         return "{" + ",".join(
-            x if is_protected_type(x) else "'{0}'".format(x.encode('utf-8'))
-            for x in self._get_val_from_obj(obj)
+            str(o) if is_protected_type(o) else "'{0}'".format(o.encode('utf-8'))
+            for o in self._get_val_from_obj(obj)
         ) + "}"
