@@ -299,6 +299,12 @@ class IterableFieldTests(TestCase):
         self.assertFalse(IterableFieldModel.objects.exclude(set_field__isnull=False).exists())
         self.assertTrue(IterableFieldModel.objects.exclude(set_field__isnull=True).exists())
 
+    def test_serialization(self):
+        instance = IterableFieldModel.objects.create(set_field={"foo"}, list_field=["bar"])
+
+        self.assertEqual("{'foo'}", instance._meta.get_field_by_name("set_field")[0].value_to_string(instance))
+        self.assertEqual("['bar']", instance._meta.get_field_by_name("list_field")[0].value_to_string(instance))
+
 
 class InstanceListFieldTests(TestCase):
 

@@ -4,6 +4,7 @@ from django.db import models
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.db.models.fields.subclassing import Creator
 from djangae.forms.fields import ListFormField
+from django.utils.encoding import is_protected_type
 from django.utils.text import capfirst
 
 
@@ -215,6 +216,14 @@ class IterableField(models.Field):
         defaults.update(**kwargs)
         return form_field_class(**defaults)
 
+    def value_to_string(self, obj):
+        """
+        Custom method for serialization
+        """
+        return str([
+            o if is_protected_type(o) else o.encode('utf-8')
+            for o in self._get_val_from_obj(obj)])
+
 
 class ListField(IterableField):
     def __init__(self, *args, **kwargs):
@@ -266,4 +275,7 @@ class SetField(IterableField):
         Custom method for serialization, as JSON doesn't support
         serializing sets.
         """
-        return str(list(self._get_val_from_obj(obj)))
+        return "{" + ",".join(
+            x if is_protected_type(x) else "'{0}'".format(x.encode('utf-8'))
+            for x in self._get_val_from_obj(obj)
+        ) + "}"
