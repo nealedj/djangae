@@ -6,10 +6,10 @@ from rest_framework import response
 
 from search.utils import clean_value
 
-from .adapters import SearchQueryAdapter
+from ..adapters import SearchQueryAdapter
+from ..utils import django_qs_to_search_qs
 from .filters import KeywordSearch
-from .paginator import SearchPageNumberPagination
-from .utils import django_qs_to_search_qs
+from .pagination import SearchPageNumberPagination
 
 
 class SearchMixin(object):
