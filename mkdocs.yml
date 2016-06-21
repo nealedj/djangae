@@ -16,5 +16,6 @@ pages:
   - Security: security.md
   - Datastore eventual consistency: consistency.md
   - Thread locking: locking.md
+  - Search: search.md
 - Contributing & Testing: contributing.md
 theme: readthedocs
