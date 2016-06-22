@@ -5,3 +5,5 @@ GoogleAppEngineCloudStorageClient==1.9.22.1
 Pillow
 webtest
 beautifulsoup4
+text-unidecode==1.0
+git+https://github.com/potatolondon/search.git
