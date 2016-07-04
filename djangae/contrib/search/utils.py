@@ -1,10 +1,16 @@
+import logging
 import operator
 import threading
 
 from django.conf import settings
 from django.db.models.lookups import Lookup
 
-from text_unidecode import unidecode
+try:
+    from text_unidecode import unidecode
+except ImportError:
+    HAS_UNIDECODE = False
+else:
+    HAS_UNIDECODE = True
 
 from search.ql import Q
 
@@ -46,8 +52,16 @@ def get_ascii_string_rank(string, max_digits=9):
     get_ord = lambda c: (ord(c) if c.isalpha() else punctuation_ord) - offset
     # Padding for the string if it's shorter than `max_digits`
     padding = chr(punctuation_ord) * max_digits
-    # And parse it with unidecode to get rid of non-ascii characters
-    string = unidecode(string)
+
+    if HAS_UNIDECODE:
+        # And parse it with unidecode to get rid of non-ascii characters
+        string = unidecode(string)
+    else:
+        logging.warning(
+            'text_unidecode package not found. If a string with non-ascii chars '
+            'is used for a document rank it may result in unexpected ordering'
+        )
+
     # Get the ordinals...
     ords = [get_ord(c) for c in (string + padding)]
     # Concat them, making sure they're all 2 digits long

@@ -2,8 +2,6 @@
 from djangae import fields
 from djangae.test import TestCase
 
-
-from text_unidecode import unidecode
 from django.db import models
 from django.db.models.signals import post_save, pre_delete
 
@@ -23,6 +21,8 @@ from .utils import (
 class TestUtils(TestCase):
 
     def test_ascii_rank(self):
+        from text_unidecode import unidecode
+
         strings = [u"a", u"az", u"aaaa", u"azzz", u"zaaa", u"jazz", u"ball", u"a ball", u"łukąźć", u"ołówek", u"♧"]
 
         ranks = [get_ascii_string_rank(s) for s in strings]
