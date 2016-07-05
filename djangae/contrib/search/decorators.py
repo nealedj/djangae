@@ -4,6 +4,7 @@ from django.utils.module_loading import import_string
 
 from search.indexes import Index
 
+from .documents import DynamicDocumentFactory
 from .registry import registry
 from .utils import (
     get_default_index_name,
@@ -75,7 +76,7 @@ def add_search_query_method(model_class):
         model_class.search_query = classmethod(search_query)
 
 
-def searchable(document_class, index_name=None, rank=None):
+def searchable(document_class=None, index_name=None, rank=None):
     """Make the decorated model searchable. Can be used to decorate a model
     multiple times should that model need to be indexed in several indexes.
 
@@ -87,7 +88,8 @@ def searchable(document_class, index_name=None, rank=None):
         document_class: The document class to index instances of this model
             with. When indexing an instance, a document class will be
             instantiated and then have its `build` method called, with the
-            instance as an argument.
+            instance as an argument. If this is not passed then a SearchMeta
+            subclass must be defined on the model.
         index_name: The name of the search index to add the documents to. It's
             valid for the same object to be added to multiple indexes.
             Default: lowercase {app_label}_{model_name}.
@@ -100,17 +102,23 @@ def searchable(document_class, index_name=None, rank=None):
             that will return the rank to use for that instance's document in
             the search index.
     """
-    if isinstance(document_class, basestring):
+    if document_class and isinstance(document_class, basestring):
         document_class = import_string(document_class)
 
     def decorator(model_class):
+        _document_class = document_class
+
+        if not _document_class:
+            doc_factory = DynamicDocumentFactory(model_class)
+            _document_class = doc_factory.create()
+
         index = Index(index_name or get_default_index_name(model_class))
 
-        registry[model_class] = document_class
+        registry[model_class] = _document_class
 
-        connect_signals(model_class, document_class, index.name, rank=rank)
+        connect_signals(model_class, _document_class, index.name, rank=rank)
         add_search_query_method(model_class)
-        model_class._search_meta = (index.name, document_class, rank)
+        model_class._search_meta = (index.name, _document_class, rank)
         return model_class
 
     return decorator

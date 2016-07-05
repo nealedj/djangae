@@ -122,10 +122,16 @@ def get_uid(model_class, document_class, index_name):
         A string UID for use as the `dispatch_uid` arg to `@receiver` or
         `signal.connect`
     """
+    if not isinstance(model_class, basestring):
+        model_class = model_class.__name__
+
+    if not isinstance(document_class, basestring):
+        document_class = document_class.__name__
+
     return "{index_name}.{model_class}.{document_class}".format(
         index_name=index_name,
-        model_class=model_class.__name__,
-        document_class=document_class.__name__
+        model_class=model_class,
+        document_class=document_class
     )
 
 

@@ -5,7 +5,7 @@ from djangae.test import TestCase
 from django.db import models
 from django.db.models.signals import post_save, pre_delete
 
-from search import fields as search_fields
+from search import fields as search_fields, indexers as search_indexers
 from search.query import SearchQuery
 
 from .decorators import searchable
@@ -162,3 +162,78 @@ class TestSearchable(TestCase):
 
         query = Foo.search_query().keywords("Box")
         self.assertEqual(query.count(), 0)
+
+
+class FooWithMeta(Foo):
+    class SearchMeta:
+        fields = ['name', 'is_good', 'tags', 'relation']
+        field_types = {
+            'name': search_fields.TextField,
+            'relation': search_fields.TextField
+        }
+        field_mappers = {
+            'tags': "|".join,
+            'relation': lambda r: r.name
+        }
+        corpus = {
+            'name': search_indexers.startswith,
+            'relation': search_indexers.contains
+        }
+
+
+FooWithMeta = searchable()(FooWithMeta)
+
+
+class TestSearchableMeta(TestCase):
+    def test_metaclass_side_effects(self):
+        index_receivers = [
+            f[1] for f in post_save.receivers
+            if f[0][0] == get_uid(FooWithMeta, "FooWithMetaDocument", "djangae_foowithmeta")
+        ]
+        unindex_receivers = [
+            f[1] for f in pre_delete.receivers
+            if f[0][0] == get_uid(FooWithMeta, "FooWithMetaDocument", "djangae_foowithmeta")
+        ]
+
+        self.assertEqual(len(index_receivers), 1)
+        self.assertEqual(len(unindex_receivers), 1)
+        self.assertTrue(hasattr(FooWithMeta, "search_query"))
+
+    def test_search_query_method(self):
+        query = FooWithMeta.search_query()
+        self.assertEqual(type(query), SearchQuery)
+
+    def test_field_types(self):
+        document_meta = FooWithMeta._search_meta[1]._doc_meta
+        self.assertIsInstance(
+            document_meta.fields['name'],
+            search_fields.TextField
+        )
+
+        self.assertIsInstance(
+            document_meta.fields['is_good'],
+            search_fields.BooleanField
+        )
+
+    def test_index(self):
+        document_cls = FooWithMeta._search_meta[1]
+
+        related = Related.objects.create(name=u"Boôk")
+        thing1 = FooWithMeta.objects.create(
+            name="Box",
+            is_good=False,
+            tags=["various", "things"],
+            relation=related
+        )
+
+        doc = document_cls(doc_id=str(thing1.pk))
+        doc.build_base(thing1)
+
+        self.assertEqual(thing1.name, doc.name)
+        self.assertEqual(thing1.is_good, doc.is_good)
+        self.assertEqual(thing1.tags, doc.tags.split("|"))
+        self.assertEqual(related.name, related.name)
+
+        corpus = search_indexers.startswith(thing1.name)
+        corpus += search_indexers.contains(related.name)
+        self.assertEqual(set(corpus), set(doc.corpus.split(' ')))
