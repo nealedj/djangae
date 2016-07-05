@@ -222,7 +222,7 @@ class TestSearchableMeta(TestCase):
 
         related = Related.objects.create(name=u"Boôk")
         thing1 = FooWithMeta.objects.create(
-            name="Box",
+            name="Big Box",
             is_good=False,
             tags=["various", "things"],
             relation=related
@@ -240,3 +240,5 @@ class TestSearchableMeta(TestCase):
         corpus = search_indexers.startswith(thing1.name)
         corpus += search_indexers.contains(related.name)
         self.assertEqual(set(corpus), set(doc.corpus.split(' ')))
+        self.assertIn(thing1.name, doc.corpus)
+        self.assertIn(related.name, doc.corpus)

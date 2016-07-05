@@ -181,11 +181,16 @@ class DynamicDocument(Document):
         if not corpus_meta:
             return ''
 
-        indexed = [
-            index_fn(getattr(self, field_name))
-            for field_name, index_fn in
-            corpus_meta.items()
-        ]
+        tokens = set()
+        words = []
+        for field_name, index_fn in corpus_meta.items():
+            field_value = getattr(self, field_name)
+            tokens = tokens.union(set(index_fn(field_value)))
 
-        indexed = set(itertools.chain.from_iterable(indexed))
-        return " ".join(indexed)
+            for word in field_value.split(' '):
+                words.append(word)
+
+        # discard any words from the tokens
+        tokens = tokens.difference(set(words))
+
+        return u'{} {}'.format(u' '.join(words), u' '.join(tokens))
