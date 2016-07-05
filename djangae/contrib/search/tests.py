@@ -166,14 +166,16 @@ class TestSearchable(TestCase):
 
 class FooWithMeta(Foo):
     class SearchMeta:
-        fields = ['name', 'is_good', 'tags', 'relation']
+        fields = ['name', 'name_lower', 'is_good', 'tags', 'relation']
         field_types = {
             'name': search_fields.TextField,
+            'name_lower': search_fields.TextField,
             'relation': search_fields.TextField
         }
         field_mappers = {
-            'tags': "|".join,
-            'relation': lambda r: r.name
+            'name_lower': lambda o: o.name.lower(),
+            'tags': lambda o: u"|".join(o.tags),
+            'relation': lambda o: o.relation.name
         }
         corpus = {
             'name': search_indexers.startswith,
@@ -230,6 +232,7 @@ class TestSearchableMeta(TestCase):
         doc.build_base(thing1)
 
         self.assertEqual(thing1.name, doc.name)
+        self.assertEqual(thing1.name.lower(), doc.name_lower)
         self.assertEqual(thing1.is_good, doc.is_good)
         self.assertEqual(thing1.tags, doc.tags.split("|"))
         self.assertEqual(related.name, related.name)

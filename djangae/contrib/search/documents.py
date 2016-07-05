@@ -1,4 +1,5 @@
 import itertools
+from django.core import exceptions
 from django.db import models
 from django.conf import settings
 from djangae import fields as djangae_fields
@@ -108,13 +109,22 @@ class DynamicDocumentFactory(object):
             self.meta.fields[field_name] = field
 
     def get_field(self, field_name):
+        try:
+            django_field = self.model_class._meta.get_field(field_name)
+        except exceptions.FieldDoesNotExist:
+            if field_name not in self.meta.field_mappers:
+                    raise Exception(
+                    u'{field_name} is not a field on the Django model and '
+                    'does not have a field_mapper defined for it.'
+                    .format(field_name=field_name)
+                )
+
         if field_name in self.meta.field_types:
             field = self.meta.field_types[field_name]
             if callable(field):
                 field = field()
-        else:
-            django_field = self.model_class._meta.get_field(field_name)
 
+        else:
             if isinstance(django_field, models.DateTimeField):
                 field_cls = self.get_datetime_field()
             else:
@@ -147,20 +157,21 @@ class DynamicDocument(Document):
     """
     def build(self, instance):
         for field_name in self._doc_meta.fields.keys():
-            value = getattr(instance, field_name)
 
-            value = self.map_field_value(value, field_name)
+            value = self.map_field_value(instance, field_name)
 
             setattr(self, field_name, value)
 
-    def map_field_value(self, value, field_name):
+    def map_field_value(self, instance, field_name):
         meta = self._doc_meta
 
         if field_name in meta.field_mappers:
-            value = meta.field_mappers[field_name](value)
+            value = meta.field_mappers[field_name](instance)
         else:
+            value = getattr(instance, field_name)
+
             if isinstance(value, (list, set,)):
-                value = " ".join(value)
+                value = u" ".join(value)
 
         return value
 
